@@ -16,6 +16,8 @@ body {
 }
 .button {
   margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
 }
 .button-load-model {
   margin-top: 10px;
@@ -29,5 +31,12 @@ body {
   text-align: center;
 }
 .circularprogress {
-  margin-left: 25px;
+  margin-left: 30px;
+}
+.textField {
+  margin-top: 15px;
+  margin-right: 30px;
+}
+.result {
+  margin-top: 20px;
 }

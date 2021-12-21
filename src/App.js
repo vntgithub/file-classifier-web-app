@@ -1,81 +1,133 @@
 import React, {useState, useEffect} from 'react';
-import * as tf from '@tensorflow/tfjs';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
+import axios from 'axios';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
+
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2'
 
 import BlockSize from './component/BlockSize';
 import Scenario from './component/Scenario';
 import Button from '@mui/material/Button';
 import TableType from './component/TableType';
+import TableResult from './component/TableResult';
 import Labels from './labels.json';
 
 import './App.css';
 
+ChartJS.register(ArcElement, Tooltip, Legend);
+const data = {
+  labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+  datasets: [
+    {
+      label: '# of Votes',
+      data: [12.599999, 18.500001, 3, 5, 2, 3],
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)',
+      ],
+      borderColor: [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)',
+      ],
+      borderWidth: 1,
+    },
+  ],
+}
+
+
 function App() {
-  const [labels, setLabels] = useState(null)
-  const [model, setModel] = useState(null)
-  const [file, setFile] = useState(null)
-  const [isLoadedData, setIsLoadedData] = useState(false)
-  const [isLoadingModel, setIsLoadingModel] = useState(false)
-  const [isSucessLoading, setIsSucessLoading] = useState(false)
+  const [dataResult, setDataResult] = useState([])
+  const [chartData, setChartData] = useState(data)
+  const [isCanPredict, setIsCanPredict] = useState(false)
+  const [wait, setWait] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [blockSize, setBlockSize] = useState(4096)
   const [scenario, setScenario] = useState('')
-  const [checkScenario, setCheckScenario] = useState(true)
+  const [dataDir, setDataDir] = useState('')
+  const [serviceURL, setServiceURL] = useState('')
 
-  const clickButtonEvent = () => {
-    document.getElementById('file').click()
-  }
-  const loadData = (e) => {
-    setFile(e.target.files[0])
-    setIsLoadedData(true)
+  const getURLData = (e) => setDataDir(e.target.value)
+  const getURLService = (e) => setServiceURL(e.target.value)
+  const closeAlert = () => setSuccess(false)
 
+  const getChartData = (resData) => {
+    let chart = {
+      labels: [], datasets: [{
+        label: '# of Votes', data: [], backgroundColor: [], borderColor: [], borderWidth: 1
+      }]
+    }
+    chart.labels = resData.map(item => item[0])
+    chart.datasets.data = resData.map(item => item[1])
+    for(let i = 0; i < resData.length; i++){
+      let x = Math.floor(Math.random() * 255)
+      let y = Math.floor(Math.random() * 255)
+      let z = Math.floor(Math.random() * 255)
+      let color = `rgba(${x}, ${y}, ${z}, 0.4)`
+      let colorBorder = `rgba(${x}, ${y}, ${z}, 1)`
+      chart.datasets.backgroundColor.push(color)
+      chart.datasets.borderColor.push(colorBorder)
+    }
+    setChartData(chart)
   }
-  const alertSuccess = () => {
-    setIsSucessLoading(true)
-    setTimeout(() => {
-      setIsSucessLoading(false)
-    }, 3000)
+
+  const analyzeData = async () => {
+    let headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+      }
+    
+    setWait(true)
+    const url = serviceURL + '/analyze'
+    const res = await axios.post(url, {block_size: blockSize, scenario: scenario, dataURL: dataDir}, headers = headers) 
+    setDataResult(res.data)
+    setWait(false)
+    setSuccess(true)
   }
-  const loadModel = async () => {
-    if(scenario === ''){
-      setCheckScenario(false)
-      return
-    }else
-      setCheckScenario(true)
-    setIsLoadingModel(true)
-    const modelLocation = '/model/' + blockSize + '_' +  scenario + '/model.json'
-    const modelFromDB = await tf.loadLayersModel(modelLocation);
-    setModel(modelFromDB)
-    setIsLoadingModel(false)
-    alertSuccess()
-  }
+
+  useEffect(() => {
+    if(scenario !== '' && dataDir !== '' && serviceURL !== '')
+      setIsCanPredict(true)
+    else
+      setIsCanPredict(false)
+
+  }, [scenario, dataDir, serviceURL])
+  // useEffect(() => {
+  //   getChartData(dataResult)
+  // }, [dataResult])
   return (
     <div className="App">
       <h1 className='header'>FILE CLASSIFIER</h1>
       <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={2}>
         <Grid item xs={4}>
-          <h3>Load model for your scenario</h3>
+          <h3>Fill your file fragment information</h3>
           <BlockSize blockSize={blockSize} setBlockSize={setBlockSize} />
           <div className='scenario'>
             <Scenario scenario={scenario} setScenario={setScenario} />
-            <div className='button-load-model'>
-              <Button onClick={loadModel} variant="outlined">Load model</Button>
-              {isLoadingModel && <div className='circularprogress'><CircularProgress /></div>}
-            </div>
-            {!checkScenario &&<Alert severity="error">Please choose your scenario!</Alert>}
-            {isSucessLoading &&<Alert severity="success">Model load successfully !</Alert>}
           </div>
-          <h3>Load data and analysic</h3>
-          <div className='button'>
-            <Button onClick={clickButtonEvent} variant="contained">Load data</Button>
-            <input id='file' onChange={loadData} className='inputfile' type='file' />
+          <div className='textField'>
+            <TextField onChange={getURLData} fullWidth  id="urlData" label="Data URL" variant="outlined" />
+          </div>
+          <div className='textField'>
+            <TextField onChange={getURLService} fullWidth  id="urlService" label="Machine-learning service URL" variant="outlined" />
           </div>
           <div className='button'>
-            <Button onClick={clickButtonEvent} variant="contained" disabled={!isLoadedData}>analyze your data</Button>
+            <Button onClick={analyzeData} variant="contained" disabled={!isCanPredict}>Analyze your data</Button>
+            {wait && <div className='circularprogress'><CircularProgress /></div>}
           </div>
+          {success && <Alert onClose={closeAlert}>Complete data analysis!!</Alert>}
         </Grid>
         <Grid item xs={4}>
           <div className='introduce'>
@@ -94,6 +146,15 @@ function App() {
             <h2 className='table-header'>File type supported </h2>
             <TableType rows={Labels[1]} />
           </div>
+        </Grid>
+      </Grid>
+      <Grid className='result' container spacing={2}>
+        <Grid item xs={3}>
+          <h2>Table result</h2>
+          <TableResult rows={dataResult} />
+        </Grid>
+        <Grid item xs={4}>
+          <Doughnut data={chartData} />
         </Grid>
       </Grid>
     </Box>
