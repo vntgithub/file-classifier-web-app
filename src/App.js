@@ -5,6 +5,9 @@ import TextField from '@mui/material/TextField';
 import axios from 'axios';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2'
@@ -53,9 +56,11 @@ function App() {
   const [isCanPredict, setIsCanPredict] = useState(false)
   const [wait, setWait] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [isGetCSV, setIsGetCSV] = useState(false)
   const [blockSize, setBlockSize] = useState(4096)
   const [scenario, setScenario] = useState('')
   const [dataDir, setDataDir] = useState('')
+  const [outputCSVDir, setOutputCSVDir] = useState('')
   const [serviceURL, setServiceURL] = useState('')
 
   const getURLData = (e) => setDataDir(e.target.value)
@@ -64,20 +69,27 @@ function App() {
 
   const getChartData = (resData) => {
     let chart = {
-      labels: [], datasets: [{
-        label: '# of Votes', data: [], backgroundColor: [], borderColor: [], borderWidth: 1
-      }]
+      labels: [],
+      datasets: [
+        {
+          label: '# of Votes',
+          data: [],
+          backgroundColor: [],
+          borderColor: [],
+          borderWidth: 1,
+        },
+      ],
     }
     chart.labels = resData.map(item => item[0])
-    chart.datasets.data = resData.map(item => item[1])
+    chart.datasets[0].data = resData.map(item => item[1])
     for(let i = 0; i < resData.length; i++){
       let x = Math.floor(Math.random() * 255)
       let y = Math.floor(Math.random() * 255)
       let z = Math.floor(Math.random() * 255)
       let color = `rgba(${x}, ${y}, ${z}, 0.4)`
       let colorBorder = `rgba(${x}, ${y}, ${z}, 1)`
-      chart.datasets.backgroundColor.push(color)
-      chart.datasets.borderColor.push(colorBorder)
+      chart.datasets[0].backgroundColor.push(color)
+      chart.datasets[0].borderColor.push(colorBorder)
     }
     setChartData(chart)
   }
@@ -90,11 +102,17 @@ function App() {
     
     setWait(true)
     const url = serviceURL + '/analyze'
-    const res = await axios.post(url, {block_size: blockSize, scenario: scenario, dataURL: dataDir}, headers = headers) 
+    let payload = {block_size: blockSize, scenario: scenario, dataURL: dataDir}
+    if(isGetCSV)
+      payload.outputCSVDir = outputCSVDir
+    const res = await axios.post(url, payload, headers = headers) 
     setDataResult(res.data)
     setWait(false)
     setSuccess(true)
+    getChartData(res.data)
   }
+  const changeCheckBox = () => setIsGetCSV(!isGetCSV)
+  const getOutputCSVDir = (e) => setOutputCSVDir(e.target.value)
 
   useEffect(() => {
     if(scenario !== '' && dataDir !== '' && serviceURL !== '')
@@ -103,15 +121,13 @@ function App() {
       setIsCanPredict(false)
 
   }, [scenario, dataDir, serviceURL])
-  // useEffect(() => {
-  //   getChartData(dataResult)
-  // }, [dataResult])
+ 
   return (
     <div className="App">
       <h1 className='header'>FILE CLASSIFIER</h1>
-      <Box sx={{ flexGrow: 1 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={4}>
+      <Box m={3} sx={{ flexGrow: 1 }}>
+      <Grid className='container1' container spacing={5}>
+        <Grid className='fragmentInf' item xs={4}>
           <h3>Fill your file fragment information</h3>
           <BlockSize blockSize={blockSize} setBlockSize={setBlockSize} />
           <div className='scenario'>
@@ -123,6 +139,13 @@ function App() {
           <div className='textField'>
             <TextField onChange={getURLService} fullWidth  id="urlService" label="Machine-learning service URL" variant="outlined" />
           </div>
+          <FormGroup>
+            <FormControlLabel onChange={changeCheckBox} control={<Checkbox checked={isGetCSV} />} label="Get file CSV" />
+          </FormGroup>
+          {isGetCSV &&
+          <div className='textField'>
+            <TextField onChange={getOutputCSVDir} fullWidth  id="outputDir" label="Output file name" variant="outlined" />
+          </div>}
           <div className='button'>
             <Button onClick={analyzeData} variant="contained" disabled={!isCanPredict}>Analyze your data</Button>
             {wait && <div className='circularprogress'><CircularProgress /></div>}
@@ -148,15 +171,17 @@ function App() {
           </div>
         </Grid>
       </Grid>
-      <Grid className='result' container spacing={2}>
-        <Grid item xs={3}>
+      {dataResult.length !== 0 &&
+      <Grid className='result' container spacing={5}>
+        <Grid item xs={5}>
           <h2>Table result</h2>
           <TableResult rows={dataResult} />
         </Grid>
-        <Grid item xs={4}>
-          <Doughnut data={chartData} />
+        <Grid className='chartContainer' item xs={7}>
+          <h2>The doughnut chartshows the ratio of file types in the data </h2>
+          <Doughnut className='chart' data={chartData} />
         </Grid>
-      </Grid>
+      </Grid>}
     </Box>
     </div>
   );
