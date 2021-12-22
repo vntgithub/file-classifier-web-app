@@ -17,9 +17,11 @@ import Scenario from './component/Scenario';
 import Button from '@mui/material/Button';
 import TableType from './component/TableType';
 import TableResult from './component/TableResult';
+import FileTypeSelectExtract from './component/FileTypeSelectExtract';
 import Labels from './labels.json';
 
 import './App.css';
+import Logo from './logo.png'
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const data = {
@@ -54,6 +56,7 @@ function App() {
   const [dataResult, setDataResult] = useState([])
   const [chartData, setChartData] = useState(data)
   const [isCanPredict, setIsCanPredict] = useState(false)
+  const [isGetExtract, setIsGetExtract] = useState(false)
   const [wait, setWait] = useState(false)
   const [success, setSuccess] = useState(false)
   const [isGetCSV, setIsGetCSV] = useState(false)
@@ -61,11 +64,18 @@ function App() {
   const [scenario, setScenario] = useState('')
   const [dataDir, setDataDir] = useState('')
   const [outputCSVDir, setOutputCSVDir] = useState('')
+  const [outputExtractDir, setOutputExtractDir] = useState('')
+  const [fileType, setFileType] = useState('')
   const [serviceURL, setServiceURL] = useState('')
 
   const getURLData = (e) => setDataDir(e.target.value)
   const getURLService = (e) => setServiceURL(e.target.value)
-  const closeAlert = () => setSuccess(false)
+  const alertSuccess = () => {
+    setSuccess(true)
+    setTimeout(() => {
+      setSuccess(false)
+    }, 5000)
+  }
 
   const getChartData = (resData) => {
     let chart = {
@@ -105,14 +115,20 @@ function App() {
     let payload = {block_size: blockSize, scenario: scenario, dataURL: dataDir}
     if(isGetCSV)
       payload.outputCSVDir = outputCSVDir
+    if(isGetExtract){
+      payload.fileType = fileType
+      payload.outputExtractDataDir = outputExtractDir
+    }
     const res = await axios.post(url, payload, headers = headers) 
     setDataResult(res.data)
     setWait(false)
-    setSuccess(true)
     getChartData(res.data)
+    alertSuccess()
   }
   const changeCheckBox = () => setIsGetCSV(!isGetCSV)
   const getOutputCSVDir = (e) => setOutputCSVDir(e.target.value)
+  const changeCheckBoxExtract = () => setIsGetExtract(!isGetExtract)
+  const getOutputExtractDir = (e) => setOutputExtractDir(e.target.value)
 
   useEffect(() => {
     if(scenario !== '' && dataDir !== '' && serviceURL !== '')
@@ -124,9 +140,11 @@ function App() {
  
   return (
     <div className="App">
-      <h1 className='header'>FILE CLASSIFIER</h1>
+      <div className='logoContainer'>
+        <img src={Logo} />
+      </div>
       <Box m={3} sx={{ flexGrow: 1 }}>
-      <Grid className='container1' container spacing={5}>
+      <Grid className='container1' container spacing={3}>
         <Grid className='fragmentInf' item xs={4}>
           <h3>Fill your file fragment information</h3>
           <BlockSize blockSize={blockSize} setBlockSize={setBlockSize} />
@@ -144,13 +162,24 @@ function App() {
           </FormGroup>
           {isGetCSV &&
           <div className='textField'>
-            <TextField onChange={getOutputCSVDir} fullWidth  id="outputDir" label="Output file name" variant="outlined" />
+            <TextField onChange={getOutputCSVDir} fullWidth  id="outputDir" label="CSV file location" variant="outlined" />
+          </div>}
+          <FormGroup>
+            <FormControlLabel onChange={changeCheckBoxExtract} control={<Checkbox checked={isGetExtract} />} label="Extract file type" />
+          </FormGroup>
+          {isGetExtract &&
+          <div className='textField'>
+            <TextField onChange={getOutputExtractDir} fullWidth  id="outputExtractDir" label="Output extracted file location" variant="outlined" />
+          </div>}
+          {isGetExtract &&
+          <div className='textField'>
+            <FileTypeSelectExtract labels={Labels[scenario]||[]} setFileType={setFileType} />
           </div>}
           <div className='button'>
             <Button onClick={analyzeData} variant="contained" disabled={!isCanPredict}>Analyze your data</Button>
             {wait && <div className='circularprogress'><CircularProgress /></div>}
           </div>
-          {success && <Alert onClose={closeAlert}>Complete data analysis!!</Alert>}
+          {success && <Alert className='alertSuccess' severity="success">Complete data analysis!!</Alert>}
         </Grid>
         <Grid item xs={4}>
           <div className='introduce'>
@@ -172,16 +201,17 @@ function App() {
         </Grid>
       </Grid>
       {dataResult.length !== 0 &&
-      <Grid className='result' container spacing={5}>
-        <Grid item xs={5}>
-          <h2>Table result</h2>
-          <TableResult rows={dataResult} />
+        <Grid className='result' container spacing={5}>
+          <Grid item xs={5}>
+            <h2>Table result</h2>
+            <TableResult rows={dataResult} />
+          </Grid>
+          <Grid className='chartContainer' item xs={7}>
+            <h2>The doughnut chartshows the ratio of file types in the data </h2>
+            <Doughnut className='chart' data={chartData} />
+          </Grid>
         </Grid>
-        <Grid className='chartContainer' item xs={7}>
-          <h2>The doughnut chartshows the ratio of file types in the data </h2>
-          <Doughnut className='chart' data={chartData} />
-        </Grid>
-      </Grid>}
+      }
     </Box>
     </div>
   );

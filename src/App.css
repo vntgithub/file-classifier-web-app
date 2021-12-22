@@ -1,5 +1,5 @@
 body {
-  padding: 25px;
+  padding: 10px;
 }
 .header {
   text-align: center;
@@ -39,7 +39,7 @@ body {
   margin-right: 30px;
 }
 .result {
-  margin-top: 25px !important;
+  margin-top: 20px !important;
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 .chart {
@@ -52,8 +52,21 @@ body {
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 .container1{
+  margin-top: 10px !important;
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 .container1 h2{
   text-align: center;
+}
+.alertSuccess {
+  margin-right: 15px;
+}
+.logoContainer{
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+}
+.logoContainer img{
+  border-radius: 15px;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
