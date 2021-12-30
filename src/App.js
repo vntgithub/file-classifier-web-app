@@ -10,7 +10,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2'
+import { Doughnut } from 'react-chartjs-2';
+import { Pie } from 'react-chartjs-2';
 
 import BlockSize from './component/BlockSize';
 import Scenario from './component/Scenario';
@@ -143,7 +144,7 @@ function App() {
       <div className='logoContainer'>
         <img src={Logo} />
       </div>
-      <Box m={3} sx={{ flexGrow: 1 }}>
+      <Box ml={3} sx={{ flexGrow: 1 }}>
       <Grid className='container1' container spacing={3}>
         <Grid className='fragmentInf' item xs={4}>
           <h3>Fill your file fragment information</h3>
@@ -201,17 +202,19 @@ function App() {
         </Grid>
       </Grid>
       {dataResult.length !== 0 &&
+      <Box ml={2} mt={10}>
         <Grid className='result' container spacing={5}>
           <Grid item xs={5}>
             <h2>Table result</h2>
             <TableResult rows={dataResult} />
           </Grid>
           <Grid className='chartContainer' item xs={7}>
-            <h2>The doughnut chartshows the ratio of file types in the data </h2>
+            <h2>The doughnut chart shows the ratio of file types in the data </h2>
+            {/* <Pie className='chart' data={chartData} /> */}
             <Doughnut className='chart' data={chartData} />
           </Grid>
         </Grid>
-      }
+        </Box>}
     </Box>
     </div>
   );
